@@ -1,27 +1,31 @@
 #!/bin/bash
 
+#!/bin/bash
 function validate_deploy_process() {
 	local EXIT_CODE=$1
 	local MSG=2
 
   if [ $EXIT_CODE == 0 ]; then
-		echo -e "\n--- $MSG!\n"
+		echo -e "\n$MSG!\n"
 		return 0
 	else
-		echo -e "\n--- $MSG!\n"
+		echo -e "\n$MSG!\n"
 		return 1
 	fi
 }
 
 function validation_message() {
-	echo -e "Arguments Requeried!\nEx: create_all_resources_premium.sh <resourceGroup> <storageName> <functionAppName> <premiumPlanName> <region>"
+	echo -e "Arguments Requeried!\nEx: create_fuction_premium.sh <resourceGroup> <storageName> <functionAppName> <premiumPlanName> <region>"
 	exit 1
 }
 
-function validate_storage_name() {
-  local local STORAGE_NAME=$1
-  local RESP=$(az storage account check-name --name $STORAGE_NAME --query nameAvailable)
-  if [ $RESP != true ]; then
+function validate_storage_account() {
+  local STORAGE_NAME=$1
+  local RESOURCE_GROUP=$2
+
+  local RESP=$(az storage account show --resource-group $RESOURCE_GROUP --name $STORAGE_NAME)
+  #not found
+  if [ $? != 0 ]; then
     return 1
   fi
   return 0
@@ -39,47 +43,14 @@ function validation() {
 		return 1
 	else
 		if [ -n $STORAGE_NAME ]; then
-      validate_storage_name $STORAGE_NAME
+      validate_storage_account $STORAGE_NAME $RESOURCE_GROUP
       if [ $? != 0 ]; then
-        	echo -e "Storage Name $STORAGE_NAME Not Available\n"
+        	echo -e "Storage Name $STORAGE_NAME Not Found\n"
           return 1
       fi
 		fi
 	fi
 	return 0
-}
-
-function create_resource_group() {
-  local resourceGroup=$1
-  local region=$2
-
-  az group create \
-  --name $resourceGroup \
-  --location $region
-
-  if [ $? != 0 ]; then
-    return 1
-  fi
-
-  return 0
-}
-
-function create_storage_account() {
-  local resourceGroup=$1
-  local region=$2
-  local storageName=$3
-
-  az storage account create \
-  --name $storageName \
-  --location $region \
-  --resource-group $resourceGroup \
-  --sku Standard_LRS
-
-  if [ $? != 0 ]; then
-    return 1
-  fi
-
-  return 0
 }
 
 function create_azure_plan() {
@@ -99,6 +70,7 @@ az functionapp plan create \
   if [ $? != 0 ]; then
     return 1
   fi
+
   return 0
 }
 
@@ -120,6 +92,7 @@ function create_functionapp() {
   if [ $? != 0 ]; then
     return 1
   fi
+
   return 0
 }
 
@@ -133,28 +106,11 @@ REGION=$5
 # Validation Input
 validation $RESOURCE_GROUP $STORAGE_NAME $FUNCTION_APP_NAME $PREMIUM_PLAN_NAME $REGION
 if [ $? != 0 ]; then
+	validate_deploy_process 1 "End"
 	exit 1
 fi
 
-echo -e "Creating Resource Group $RESOURCE_GROUP...\n"
-create_resource_group $RESOURCE_GROUP $REGION
-if [ $? != 0 ]; then
-		validate_deploy_process 1 "Fail to Create Resource Group."
-		exit 1
-else
-  echo -e "Success to Create Resource Group.\n"
-fi
-
-echo -e "Creating Storage Account $STORAGE_NAME...\n"
-create_storage_account $RESOURCE_GROUP $REGION $STORAGE_NAME
-if [ $? != 0 ]; then
-		validate_deploy_process 1 "Fail to Create Storage Account."
-		exit 1
-else
-  echo -e "Success to Create Storage Account.\n"
-fi
-
-echo -e "Creating Premium Plan Account $PREMIUM_PLAN_NAME...\n"
+echo -e "Creating Premium Plan $PREMIUM_PLAN_NAME...\n"
 create_azure_plan $RESOURCE_GROUP $REGION $PREMIUM_PLAN_NAME
 if [ $? != 0 ]; then
 		validate_deploy_process 1 "Fail to Create Premium Plan Account."
@@ -163,7 +119,7 @@ else
   echo -e "Success to Create Premium Plan Account.\n"
 fi
 
-echo -e "Creating Function App $FUNCTION_APP_NAME...\n"
+echo -e "Creating Function $FUNCTION_APP_NAME...\n"
 create_functionapp $RESOURCE_GROUP $STORAGE_NAME $PREMIUM_PLAN_NAME $FUNCTION_APP_NAME
 if [ $? != 0 ]; then
 		validate_deploy_process 1 "Fail to Create Function App."
