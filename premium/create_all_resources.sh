@@ -14,7 +14,7 @@ function validate_deploy_process() {
 }
 
 function validation_message() {
-	echo -e "Arguments Requeried!\nEx: create_all_resources_premium.sh <resourceGroup> <storageName> <functionAppName> <premiumPlanName> <region>"
+	echo -e "Arguments Requeried!\nEx: create_all_resources.sh <resourceGroup> <storageName> <functionAppName> <premiumPlanName> <region>"
 	exit 1
 }
 

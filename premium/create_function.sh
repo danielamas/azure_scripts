@@ -1,6 +1,5 @@
 #!/bin/bash
 
-#!/bin/bash
 function validate_deploy_process() {
 	local EXIT_CODE=$1
 	local MSG=2
@@ -15,7 +14,7 @@ function validate_deploy_process() {
 }
 
 function validation_message() {
-	echo -e "Arguments Requeried!\nEx: create_fuction_premium.sh <resourceGroup> <storageName> <functionAppName> <premiumPlanName> <region>"
+	echo -e "Arguments Requeried!\nEx: create_fuction.sh <resourceGroup> <storageName> <functionAppName> <premiumPlanName> <region>"
 	exit 1
 }
 

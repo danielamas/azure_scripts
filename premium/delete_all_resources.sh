@@ -14,7 +14,7 @@ function validate_deploy_process() {
 }
 
 function validation_message() {
-	echo -e "Arguments Requeried!\nEx: delete_all_resources_premium.sh <resourceGroup> <storageName> <functionAppName> <region>"
+	echo -e "Arguments Requeried!\nEx: delete_all_resources.sh <resourceGroup> <storageName> <functionAppName> <premiumPlanName> <region>"
 	exit 1
 }
 
@@ -34,9 +34,10 @@ function validation() {
   local RESOURCE_GROUP=$1
   local STORAGE_NAME=$2
   local FUNCTION_APP_NAME=$3
-  local REGION=$4
+  local PREMIUM_PLAN_NAME=$4
+  local REGION=$5
 
-  if [ $# -lt 4 ]; then
+  if [ $# -lt 5 ]; then
 		validation_message
 		return 1
 	else
@@ -111,14 +112,30 @@ function delete_function_app_insights() {
   return 0
 }
 
-# main
+function delete_azure_plan() {
+  local resourceGroup=$1
+  local premiumPlanName=$2
+
+az functionapp plan delete \
+--resource-group $resourceGroup \
+--name $premiumPlanName \
+
+  if [ $? != 0 ]; then
+    return 1
+  fi
+
+  return 0
+}
+
+# Function app and storage account names must be unique.
 RESOURCE_GROUP=$1
 STORAGE_NAME=$2
 FUNCTION_APP_NAME=$3
-REGION=$4
+PREMIUM_PLAN_NAME=$4
+REGION=$5
 
 # Validation Input
-validation $RESOURCE_GROUP $STORAGE_NAME $FUNCTION_APP_NAME $REGION
+validation $RESOURCE_GROUP $STORAGE_NAME $FUNCTION_APP_NAME $PREMIUM_PLAN_NAME $REGION
 if [ $? != 0 ]; then
 	validate_deploy_process 1 "End"
 	exit 1
@@ -129,6 +146,15 @@ delete_functionapp $RESOURCE_GROUP $FUNCTION_APP_NAME
 if [ $? != 0 ]; then
 		validate_deploy_process 1 "Fail to Create Function App."
 		exit 1
+fi
+
+echo -e "\nDeleting Premium Plan $PREMIUM_PLAN_NAME...\n"
+delete_azure_plan $RESOURCE_GROUP $REGION $PREMIUM_PLAN_NAME
+if [ $? != 0 ]; then
+		validate_deploy_process 1 "Fail to Delete Premium Plan Account."
+		exit 1
+else
+  echo -e "Success to Delete Premium Plan Account $PREMIUM_PLAN_NAME.\n\n"
 fi
 
 echo -e "\nDeleting Function App Insights $FUNCTION_APP_NAME...\n"
